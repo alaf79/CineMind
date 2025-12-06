@@ -1,13 +1,44 @@
 import { registerService, loginService } from "../services/services.js";
+import { validatePassword, validateUsername, validateEmail } from "../utils/passwordValidator.js";
+import { sendWelcomeEmail } from "../services/emailService.js";
 
 export async function register(req, res) {
   try {
     const { username, email, password } = req.body;
+
+    const usernameValidation = validateUsername(username);
+    if (!usernameValidation.isValid) {
+      return res.status(400).json({ 
+        success: false, 
+        error: usernameValidation.errors[0] 
+      });
+    }
+
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      return res.status(400).json({ 
+        success: false, 
+        error: emailValidation.errors[0] 
+      });
+    }
+
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      return res.status(400).json({ 
+        success: false, 
+        error: passwordValidation.errors[0] 
+      });
+    }
+
     const user = await registerService(username, email, password);
+
+    sendWelcomeEmail(email, username).catch(err => 
+      console.error('Failed to send welcome email:', err)
+    );
 
     res.status(201).json({ success: true, user });
   } catch (err) {
-    if (err.code === '23505') {  
+    if (err.code === '23505') {
       if (err.constraint === 'users_username_key') {
         return res.status(400).json({ 
           success: false, 
