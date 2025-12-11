@@ -24,7 +24,7 @@ export async function sendWelcomeEmail(email, username) {
             <li>Get AI-powered suggestions</li>
           </ul>
           <p>Start exploring movies now!</p>
-          <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard" 
+          <a href="${process.env.FRONTEND_URL}/dashboard" 
              style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin-top: 20px;">
             Go to Dashboard
           </a>
@@ -47,7 +47,7 @@ export async function sendPasswordResetEmail(email, resetToken) {
       return { success: true, mock: true };
     }
 
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
     const data = await resend.emails.send({
       from: "CineMind <onboarding@resend.dev>",
