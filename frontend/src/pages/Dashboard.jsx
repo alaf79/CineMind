@@ -6,13 +6,19 @@ import AddMovies from "../pages/AddMovies";
 import MyMovies from "../pages/MyMovies";
 import Discover from "../pages/Discover";
 import Profile from "../pages/Profile";
+import Settings from "./Settings";
+import Help from "./Help";
+import PrivacyPolicy from "./PrivacyPolicy.jsx";
 
 export default function Dashboard({ onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
 
   const pathSegments = location.pathname.split("/");
-  const currentTab = pathSegments[2] || "dashboard";
+  const section = pathSegments[2] || "dashboard";
+  const subsection = pathSegments[3] || null;
+
+  const currentTab = subsection ? `${section}/${subsection}` : section;
 
   const handleTabClick = (tab) => {
     if (tab === "dashboard") navigate(`/dashboard`);
@@ -256,6 +262,24 @@ export default function Dashboard({ onLogout }) {
           <div className="flex-1 overflow-y-auto scrollbar-hide">
             <Profile />
           </div>
+        )}
+
+        {currentTab === "settings" && (
+          <div className="flex-1 overflow-y-auto scrollbar-hide">
+            <Settings />
+          </div>
+        )}
+
+        {currentTab === "help" && (
+          <div className="flex-1 overflow-y-auto scrollbar-hide">
+            <Help />
+          </div>
+        )}
+
+        {currentTab === "legal/privacy-policy" && (
+          <div className="flex-1 overflow-y-auto scrollbar-hide">
+            <PrivacyPolicy />
+            </div>
         )}
       </div>
 

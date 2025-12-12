@@ -142,42 +142,53 @@ export default function Navbar({ loggedIn, onLogout, activeTab, setActiveTab }) 
                 >
                   <FiSettings className="w-6 h-6" />
                 </button>
-
                 {dropdownOpen && (
                   <div className="absolute right-0 mt-2 bg-gray-800 rounded-md shadow-lg py-2 z-50 min-w-[10rem]">
-                    <div className="absolute -top-2 right-3 w-3 h-3 bg-gray-800 rotate-45"></div>
-                    <button
-                      className="w-full text-left px-4 py-2 hover:bg-gray-700 transition text-sm cursor-pointer"
-                      onClick={() => navigate('/edit-profile')}
-                    >
-                      Edit Profile
-                    </button>
-                    <button
-                      className="w-full text-left px-4 py-2 hover:bg-gray-700 transition text-sm cursor-pointer"
-                      onClick={() => navigate('/settings')}
-                    >
-                      Settings
-                    </button>
-                    <button
-                      className="w-full text-left px-4 py-2 hover:bg-gray-700 transition text-sm cursor-pointer"
-                      onClick={() => navigate('/help')}
-                    >
-                      Help / FAQ
-                    </button>
-                    <button
-                      className="w-full text-left px-4 py-2 hover:bg-gray-700 transition text-sm cursor-pointer"
-                      onClick={() => navigate('/privacy-policy')}
-                    >
-                      Privacy Policy
-                    </button>
-                    <hr className="border-gray-700 my-1" />
-                    <button
-                      className="w-full text-left px-4 py-2 hover:bg-red-700 text-red-500 font-semibold transition rounded-b-md text-sm cursor-pointer"
-                      onClick={handleLogout}
-                    >
-                      Logout
-                    </button>
-                  </div>
+                  <div className="absolute -top-2 right-3 w-3 h-3 bg-gray-800 rotate-45"></div>
+
+                  <button
+                    className="w-full text-left px-4 py-2 hover:bg-gray-700 transition text-sm cursor-pointer"
+                    onClick={() => {
+                      navigate('/dashboard/settings');
+                      setDropdownOpen(false);
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    Settings
+                  </button>
+
+                  <button
+                    className="w-full text-left px-4 py-2 hover:bg-gray-700 transition text-sm cursor-pointer"
+                    onClick={() => {
+                      navigate('/dashboard/help');
+                      setDropdownOpen(false);
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    Help / FAQ
+                  </button>
+
+                  <button
+                    className="w-full text-left px-4 py-2 hover:bg-gray-700 transition text-sm cursor-pointer"
+                    onClick={() => {
+                      navigate('/dashboard/legal/privacy-policy');
+                      setDropdownOpen(false);
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    Privacy Policy
+                  </button>
+
+                  <hr className="border-gray-700 my-1" />
+
+                  <button
+                    className="w-full text-left px-4 py-2 hover:bg-red-700 text-red-500 font-semibold transition rounded-b-md text-sm cursor-pointer"
+                    onClick={handleLogout}
+                  >
+                    Logout
+                  </button>
+                </div>
+
                 )}
               </div>
             )}
@@ -216,16 +227,13 @@ export default function Navbar({ loggedIn, onLogout, activeTab, setActiveTab }) 
 
           {loggedIn && (
             <div className="flex flex-col items-center space-y-1 w-full">
-              <button className="w-full text-center py-2 px-3 hover:bg-gray-700 transition rounded-md cursor-pointer" onClick={() => { navigate('/edit-profile'); setMobileMenuOpen(false); }}>
-                Edit Profile
-              </button>
-              <button className="w-full text-center py-2 px-3 hover:bg-gray-700 transition rounded-md cursor-pointer" onClick={() => { navigate('/settings'); setMobileMenuOpen(false); }}>
+              <button className="w-full text-center py-2 px-3 hover:bg-gray-700 transition rounded-md cursor-pointer" onClick={() => { navigate('/dashboard/settings'); setMobileMenuOpen(false); }}>
                 Settings
               </button>
-              <button className="w-full text-center py-2 px-3 hover:bg-gray-700 transition rounded-md cursor-pointer" onClick={() => { navigate('/help'); setMobileMenuOpen(false); }}>
+              <button className="w-full text-center py-2 px-3 hover:bg-gray-700 transition rounded-md cursor-pointer" onClick={() => { navigate('/dashboard/help'); setMobileMenuOpen(false); }}>
                 Help / FAQ
               </button>
-              <button className="w-full text-center py-2 px-3 hover:bg-gray-700 transition rounded-md cursor-pointer" onClick={() => { navigate('/privacy-policy'); setMobileMenuOpen(false); }}>
+              <button className="w-full text-center py-2 px-3 hover:bg-gray-700 transition rounded-md cursor-pointer" onClick={() => { navigate('/dashboard/legal/privacy-policy'); setMobileMenuOpen(false); }}>
                 Privacy Policy
               </button>
               <button className="w-full text-center py-2 px-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-md transition cursor-pointer" onClick={handleLogout}>
