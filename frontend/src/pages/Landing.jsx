@@ -23,7 +23,7 @@ export default function Landing() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-900 text-white">
-      <Navbar loggedIn={false} />
+      <Navbar />
 
       <section className="flex flex-col items-center justify-center flex-1 text-center px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900">
         

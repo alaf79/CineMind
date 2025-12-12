@@ -38,6 +38,7 @@ export default function Navbar({ loggedIn, onLogout, activeTab, setActiveTab }) 
   };
 
   const isAuthPage = location.pathname.startsWith('/login');
+  const isLandingPage = location.pathname === '/';
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -116,6 +117,22 @@ export default function Navbar({ loggedIn, onLogout, activeTab, setActiveTab }) 
           {/* Desktop Menu */}
           <div className="hidden md:flex md:items-center md:space-x-6">
             {loggedIn && menuButtons.map(renderTabButton)}
+            {!loggedIn && isLandingPage && (
+              <>
+                <button
+                  className="px-4 py-2 text-white hover:text-blue-400 transition"
+                  onClick={handleLoginClick}
+                >
+                  Login
+                </button>
+                <button
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition"
+                  onClick={handleSignupClick}
+                >
+                  Sign Up
+                </button>
+              </>
+            )}
 
             {loggedIn && (
               <div className="relative ml-4" ref={dropdownRef}>
@@ -168,10 +185,11 @@ export default function Navbar({ loggedIn, onLogout, activeTab, setActiveTab }) 
 
           {/* Mobile Hamburger */}
           <div className="md:hidden flex items-center">
-            <button
-              className="flex flex-col justify-center items-center w-8 h-8 relative cursor-pointer"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
+            {(!isAuthPage) && (
+              <button
+                className="flex flex-col justify-center items-center w-8 h-8 relative cursor-pointer"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
               <span
                 className={`block absolute h-0.5 w-8 bg-white transform transition duration-300 ease-in-out
                   ${mobileMenuOpen ? 'rotate-45' : '-translate-y-2'}`}
@@ -185,6 +203,7 @@ export default function Navbar({ loggedIn, onLogout, activeTab, setActiveTab }) 
                   ${mobileMenuOpen ? '-rotate-45' : 'translate-y-2'}`}
               ></span>
             </button>
+            )}
           </div>
         </div>
 
@@ -215,7 +234,7 @@ export default function Navbar({ loggedIn, onLogout, activeTab, setActiveTab }) 
             </div>
           )}
 
-          {!loggedIn && !isAuthPage && (
+          {!loggedIn && isLandingPage && (
             <div className="flex flex-col items-center w-full space-y-2">
               <button className="w-full text-center py-2 px-3 hover:text-blue-400 transition cursor-pointer" onClick={handleLoginClick}>
                 Login
