@@ -54,7 +54,7 @@ export default function Login({ onLogin }) {
       onLogin();
       
       setTimeout(() => {
-        navigate("/dashboard");
+        navigate("/home");
       }, 1200);
     } catch (err) {
       console.error("Login error:", err);

@@ -24,9 +24,9 @@ export async function sendWelcomeEmail(email, username) {
             <li>Get AI-powered suggestions</li>
           </ul>
           <p>Start exploring movies now!</p>
-          <a href="${process.env.FRONTEND_URL}/dashboard" 
+          <a href="${process.env.FRONTEND_URL}/home" 
              style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin-top: 20px;">
-            Go to Dashboard
+            Go to CineMind
           </a>
           <p style="color: #666; font-size: 12px; margin-top: 40px;">
             This is a demo project. Please use test data only.

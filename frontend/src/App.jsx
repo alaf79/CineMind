@@ -4,7 +4,7 @@ import { authUtils } from "./utils/authUtils";
 import FilmTransition from "./components/FilmTransition";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
+import Home from "./pages/Home";
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(false);
@@ -24,7 +24,7 @@ function App() {
     setShowTransition(true);
   };
 
-  const handleNavigateToDashboard = () => {
+  const handleNavigateToHome = () => {
     setShowTransition(true);
   };
 
@@ -49,14 +49,14 @@ function App() {
     <Router>
       {showTransition && <FilmTransition onComplete={handleTransitionComplete} />}
       <Routes>
-        <Route path="/" element={<Landing onNavigateToDashboard={handleNavigateToDashboard} />} />
+        <Route path="/" element={<Landing onNavigateToHome={handleNavigateToHome} />} />
         <Route path="/login" element={<Login onLogin={handleLogin} />} />
 
         <Route
-          path="/dashboard/*"
+          path="/home/*"
           element={
             loggedIn ? (
-              <Dashboard onLogout={handleLogout} />
+              <Home onLogout={handleLogout} />
             ) : (
               <Navigate to="/" replace />
             )
