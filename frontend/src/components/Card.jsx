@@ -43,7 +43,7 @@ export default function Card({ movie, onClick, showRating = false, index = 0, is
       onMouseLeave={() => setIsHovered(false)}
       onClick={onClick}
     >
-      <div className={`relative ${isPerson ? 'aspect-[3/4]' : 'aspect-[2/3]'} rounded overflow-hidden bg-slate-900 ring-1 ring-slate-700 hover:ring-purple-400/50 transition-all duration-300 group-hover:shadow-lg group-hover:shadow-purple-500/20 group-hover:scale-[1.03] group-active:scale-[0.98]`}>
+      <div className={`relative ${isPerson ? 'aspect-[3/4]' : 'aspect-[2/3]'} rounded overflow-hidden bg-slate-900 ring-1 ring-slate-700 hover:ring-purple-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20 group-hover:scale-[1.03] group-active:scale-[0.98]`}>
         <img 
           src={poster} 
           alt={title}
