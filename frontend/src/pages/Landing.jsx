@@ -5,7 +5,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import Logo from '../assets/logo.png';
 
-export default function Landing() {
+export default function Landing({ onNavigateToDashboard }) {
   const [show, setShow] = useState(false);
   const navigate = useNavigate();
 
@@ -15,7 +15,12 @@ export default function Landing() {
 
   const handleGetStarted = () => {
     if (authUtils.isAuthenticated()) {
-      navigate('/dashboard');
+      if (onNavigateToDashboard) {
+        onNavigateToDashboard();
+      }
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1200);
     } else {
       navigate('/login?signup=true');
     }

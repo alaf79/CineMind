@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { authUtils } from "./utils/authUtils";
+import FilmTransition from "./components/FilmTransition";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -8,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 function App() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showTransition, setShowTransition] = useState(false);
 
   useEffect(() => {
     const token = authUtils.getToken();
@@ -19,6 +21,15 @@ function App() {
 
   const handleLogin = () => {
     setLoggedIn(true);
+    setShowTransition(true);
+  };
+
+  const handleNavigateToDashboard = () => {
+    setShowTransition(true);
+  };
+
+  const handleTransitionComplete = () => {
+    setShowTransition(false);
   };
 
   const handleLogout = () => {
@@ -36,8 +47,9 @@ function App() {
 
   return (
     <Router>
+      {showTransition && <FilmTransition onComplete={handleTransitionComplete} />}
       <Routes>
-        <Route path="/" element={<Landing />} />
+        <Route path="/" element={<Landing onNavigateToDashboard={handleNavigateToDashboard} />} />
         <Route path="/login" element={<Login onLogin={handleLogin} />} />
 
         <Route

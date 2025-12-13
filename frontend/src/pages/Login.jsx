@@ -50,8 +50,12 @@ export default function Login({ onLogin }) {
 
       authUtils.setAuth(res.token, form.username, rememberMe);
 
+
       onLogin();
-      navigate("/dashboard");
+      
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 1200);
     } catch (err) {
       console.error("Login error:", err);
       setError("Server error. Try again.");
