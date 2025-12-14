@@ -41,7 +41,7 @@ export default function PrivacyPolicy() {
   ];
 
   return (
-    <div className="flex flex-col w-full bg-slate-950 text-slate-50 min-h-screen px-6 py-12">
+    <div className="max-w-3xl mx-auto w-full">
       <div className="max-w-3xl mx-auto w-full">
         <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
           Privacy Policy

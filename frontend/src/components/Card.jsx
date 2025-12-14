@@ -1,8 +1,12 @@
+// frontend/src/components/Card.jsx
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Star } from 'lucide-react';
+import { getMovieUrl, getPersonUrl } from '../utils/urlUtils';
 
 export default function Card({ movie, onClick, showRating = false, index = 0, isPerson = false }) {
   const [isHovered, setIsHovered] = useState(false);
+  const navigate = useNavigate();
 
   // Handle both movie and person data structures
   const title = movie.title || movie.name;
@@ -33,6 +37,24 @@ export default function Card({ movie, onClick, showRating = false, index = 0, is
     );
   };
 
+  const handleCardClick = () => {
+    if (onClick) {
+      onClick();
+    } else if (isPerson) {
+      navigate(getPersonUrl(movie.id, title));
+    } else {
+      navigate(getMovieUrl(movie.id, title));
+    }
+  };
+
+  const handleDirectorClick = (e) => {
+    e.stopPropagation();
+    // Navigate to director page if we have the director ID
+    if (movie.directorId) {
+      navigate(getPersonUrl(movie.directorId, director));
+    }
+  };
+
   return (
     <div 
       className="group cursor-pointer movie-card"
@@ -41,7 +63,7 @@ export default function Card({ movie, onClick, showRating = false, index = 0, is
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={onClick}
+      onClick={handleCardClick}
     >
       <div className={`relative ${isPerson ? 'aspect-[3/4]' : 'aspect-[2/3]'} rounded overflow-hidden bg-slate-900 ring-1 ring-slate-700 hover:ring-purple-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20 group-hover:scale-[1.03] group-active:scale-[0.98]`}>
         <img 
@@ -62,7 +84,23 @@ export default function Card({ movie, onClick, showRating = false, index = 0, is
                 {title}
               </h3>
               <p className="text-xs text-slate-300 mb-2">
-                {isPerson ? director : `${year} · ${director}`}
+                {isPerson ? (
+                  director
+                ) : (
+                  <>
+                    {year} · 
+                    {movie.directorId ? (
+                      <button
+                        onClick={handleDirectorClick}
+                        className="hover:text-purple-400 transition hover:underline ml-1"
+                      >
+                        {director}
+                      </button>
+                    ) : (
+                      <span className="ml-1">{director}</span>
+                    )}
+                  </>
+                )}
               </p>
               {showRating && movie.rating && (
                 <div className="flex items-center gap-1 mb-2">

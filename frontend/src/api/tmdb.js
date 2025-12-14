@@ -1,3 +1,4 @@
+// frontend/src/api/tmdb.js
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
@@ -89,6 +90,7 @@ export const tmdbService = {
             
             let cast = [];
             let director = 'TBA';
+            let directorId = null;
             let castPopularity = 0;
             
             if (creditsRes.ok) {
@@ -96,6 +98,7 @@ export const tmdbService = {
               cast = credits.cast || [];
               const directorObj = credits.crew?.find(person => person.job === 'Director');
               director = directorObj?.name || 'TBA';
+              directorId = directorObj?.id || null;
               
               // Calculate total cast popularity (sum of top 3 cast members)
               castPopularity = cast
@@ -142,11 +145,12 @@ export const tmdbService = {
               },
               cast,
               director,
+              directorId,
               castPopularity
             };
           } catch (err) {
             console.warn(`Failed to fetch data for ${movie.title}`);
-            return { movie, cast: [], director: 'TBA', castPopularity: 0 };
+            return { movie, cast: [], director: 'TBA', directorId: null, castPopularity: 0 };
           }
         })
       );
@@ -179,6 +183,7 @@ export const tmdbService = {
         title: data.movie.title,
         date: formatReleaseDate(data.movie.release_date),
         director: data.director,
+        directorId: data.directorId,
         poster: data.movie.poster_path 
           ? `${TMDB_IMAGE_BASE}/original${data.movie.poster_path}` 
           : null,
@@ -257,6 +262,7 @@ export const tmdbService = {
       const moviesWithDetails = await Promise.allSettled(
         popularFiltered.map(async (movie) => {
           let director = 'TBA';
+          let directorId = null;
           
           try {
             const creditsRes = await fetch(
@@ -268,6 +274,7 @@ export const tmdbService = {
               const directorObj = credits.crew?.find(person => person.job === 'Director');
               if (directorObj) {
                 director = directorObj.name;
+                directorId = directorObj.id;
               }
             }
           } catch (err) {
@@ -279,6 +286,7 @@ export const tmdbService = {
             title: movie.title,
             date: formatReleaseDate(movie.release_date),
             director: director,
+            directorId: directorId,
             poster: movie.poster_path 
               ? `${TMDB_IMAGE_BASE}/original${movie.poster_path}` 
               : null,
