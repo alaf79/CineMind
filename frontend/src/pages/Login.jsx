@@ -36,6 +36,7 @@ export default function Login({ onLogin }) {
     try {
       let res;
 
+      // Call the correct API based on signup/login
       if (isSignup) {
         res = await registerUser(form.username, form.email, form.password);
       } else {
@@ -48,11 +49,12 @@ export default function Login({ onLogin }) {
         return;
       }
 
+      // Set auth with token, username, and rememberMe preference
       authUtils.setAuth(res.token, form.username, rememberMe);
 
-
       onLogin();
-      
+
+      // Redirect after a short delay
       setTimeout(() => {
         navigate("/home");
       }, 1200);

@@ -493,5 +493,86 @@ export const tmdbService = {
           : null
       }
     };
-  }
+  },
+
+  searchMovies: async (query) => {
+      try {
+        const response = await fetch(
+          `${TMDB_BASE_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=en-US`
+        );
+        
+        if (!response.ok) throw new Error('Search failed');
+        
+        const data = await response.json();
+        
+        return data.results.map(movie => ({
+          id: movie.id,
+          title: movie.title,
+          year: movie.release_date ? new Date(movie.release_date).getFullYear() : null,
+          poster: movie.poster_path 
+            ? `${TMDB_IMAGE_BASE}/w500${movie.poster_path}` 
+            : null,
+          overview: movie.overview,
+        }));
+      } catch (error) {
+        console.error('Movie search failed:', error);
+        return [];
+      }
+    },
+  
+    // Get detailed movie information
+    getMovieDetails: async (movieId) => {
+      try {
+        const [movieRes, creditsRes] = await Promise.all([
+          fetch(`${TMDB_BASE_URL}/movie/${movieId}?api_key=${API_KEY}&language=en-US`),
+          fetch(`${TMDB_BASE_URL}/movie/${movieId}/credits?api_key=${API_KEY}`)
+        ]);
+  
+        if (!movieRes.ok || !creditsRes.ok) throw new Error('Failed to fetch movie details');
+  
+        const movie = await movieRes.json();
+        const credits = await creditsRes.json();
+  
+        const director = credits.crew?.find(person => person.job === 'Director');
+  
+        return {
+          id: movie.id,
+          title: movie.title,
+          year: movie.release_date ? new Date(movie.release_date).getFullYear() : null,
+          poster: movie.poster_path 
+            ? `${TMDB_IMAGE_BASE}/original${movie.poster_path}` 
+            : null,
+          director: director?.name || 'Unknown',
+          directorId: director?.id || null,
+          genres: movie.genres?.map(g => g.name) || [],
+          overview: movie.overview,
+          runtime: movie.runtime,
+          releaseDate: movie.release_date,
+        };
+      } catch (error) {
+        console.error('Failed to fetch movie details:', error);
+        return null;
+      }
+    },
+  
+    // Get multiple movie details at once (for enriching user library)
+    getMoviesDetails: async (movieIds) => {
+      try {
+        const moviePromises = movieIds.map(id => tmdbService.getMovieDetails(id));
+        const results = await Promise.allSettled(moviePromises);
+        
+        return results
+          .filter(result => result.status === 'fulfilled' && result.value !== null)
+          .map(result => result.value);
+      } catch (error) {
+        console.error('Failed to fetch movies details:', error);
+        return [];
+      }
+    },
+  
+    // Get image URL helper
+    getImageUrl: (path, size = 'w500') => {
+      if (!path) return null;
+      return `${TMDB_IMAGE_BASE}/${size}${path}`;
+    },
 };

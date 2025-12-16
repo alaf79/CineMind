@@ -1,47 +1,76 @@
-import React, { useState } from 'react';
-import { X, Search, Star } from 'lucide-react';
-import Papa from 'papaparse';
+import React, { useState, useEffect } from 'react';
+import { X, Search, Star, Loader } from 'lucide-react';
+import { tmdbService } from '../api/tmdb';
+import { movieApi } from '../api/movieApi';
 
-export default function AddMovies() {
+export default function AddMovies({ onMovieAdded }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
-  const [importedMovies, setImportedMovies] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Static movies
-  const staticMovies = [
-    { 
-      id: 1, 
-      title: 'Inception', 
-      year: 2010,
-      poster: 'https://image.tmdb.org/t/p/w500/ljsZTbVsrQSqZgWeep2B1QiDKuh.jpg',
-      director: 'Christopher Nolan'
-    },
-    { 
-      id: 2, 
-      title: 'Interstellar', 
-      year: 2014,
-      poster: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
-      director: 'Christopher Nolan'
-    },
-  ];
+  // Debounced search
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
 
-  // Merge static + imported movies
-  const allMovies = [...staticMovies, ...importedMovies];
+    setIsSearching(true);
+    const timeoutId = setTimeout(async () => {
+      try {
+        const results = await tmdbService.searchMovies(searchQuery);
+        setSearchResults(results);
+      } catch (err) {
+        console.error('Search failed:', err);
+        setError('Search failed. Please try again.');
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500);
 
-  const filteredMovies = searchQuery
-    ? allMovies.filter(movie =>
-        movie.title.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : [];
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
 
-  const handleAddMovie = () => {
-    if (selectedMovie && rating > 0) {
+  const handleMovieSelect = async (movie) => {
+    try {
+      // Get full movie details including director
+      const details = await tmdbService.getMovieDetails(movie.id);
+      setSelectedMovie(details || movie);
+    } catch (err) {
+      console.error('Failed to get movie details:', err);
+      setSelectedMovie(movie);
+    }
+  };
+
+  const handleAddMovie = async () => {
+    if (!selectedMovie || rating === 0) return;
+
+    setIsAdding(true);
+    setError(null);
+
+    try {
+      await movieApi.addMovie(selectedMovie.id, rating);
+      
+      // Notify parent component to refresh data
+      if (onMovieAdded) {
+        onMovieAdded();
+      }
+
+      // Success feedback
       alert(`Added ${selectedMovie.title} with rating ${rating}/10`);
       handleClose();
+    } catch (err) {
+      console.error('Failed to add movie:', err);
+      setError(err.message || 'Failed to add movie. Please try again.');
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -53,59 +82,45 @@ export default function AddMovies() {
       setSelectedMovie(null);
       setRating(0);
       setSearchQuery('');
+      setSearchResults([]);
+      setError(null);
     }, 200);
   };
 
-  const handleCSVImport = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: function (results) {
-        const movies = results.data.map((row, index) => ({
-          id: Date.now() + index,
-          title: row.title,
-          year: row.year,
-          director: row.director || '',
-          poster: row.poster || '',
-        }));
-
-        setImportedMovies((prev) => [...prev, ...movies]);
-        alert(`${movies.length} movies imported!`);
-      },
-    });
-  };
-
   return (
-    <div className="flex flex-col w-full bg-slate-950 text-slate-50 min-h-screen items-center justify-start px-6">
+    <div className="flex flex-col w-full items-center justify-start mt-70">
       {!isOpen ? (
-        <div className="text-center mt-70">
-          <h2 className="text-3xl font-bold mb-3">Rate a Film</h2>
-          <p className="text-slate-400 mb-8 max-w-md">
-            Add your rating to get personalized recommendations
-          </p>
-          
-          <div className="flex flex-col gap-4 items-center">
+          <div className="text-center flex flex-col items-center gap-2 w-full">
+            <h2 className="text-3xl font-bold mb-3">Rate a Film</h2>
+            <p className="text-slate-400 mb-8 max-w-md">
+              Add your rating to get personalized recommendations
+            </p>
+
             <button
               onClick={() => setIsOpen(true)}
-              className="px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 rounded font-medium text-sm transition-all duration-150 shadow-lg shadow-purple-500/20 hover:scale-105 active:scale-95"
+              className="w-50 max-w-md px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 rounded font-medium text-sm transition-all duration-150 shadow-lg shadow-purple-500/20 hover:scale-105 active:scale-95"
             >
               + Add a Film
             </button>
 
-            <label className="inline-block px-6 py-2.5 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-400 hover:to-teal-400 rounded font-medium text-sm cursor-pointer text-slate-50 transition-all duration-150 hover:scale-105 active:scale-95">
-              Import CSV
-              <input
-                type="file"
-                accept=".csv"
-                onChange={handleCSVImport}
-                className="hidden"
-              />
-            </label>
+            <label className="w-full max-w-md cursor-pointer center mt-4 flex items-center justify-center">
+            <input 
+              type="file" 
+              accept=".csv" 
+              className="hidden" 
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  alert(`Selected file: ${file.name}`);
+                  // Implement CSV import logic here
+                }
+              }} 
+            />
+            <div className="w-50 px-6 py-2.5 bg-gradient-to-r from-green-500 to-lime-400 hover:from-green-400 hover:to-lime-300 rounded font-medium text-sm text-slate-50 transition-all duration-150 shadow-lg shadow-green-500/20 hover:scale-105 active:scale-95 text-center">
+              Import from CSV
+            </div>
+          </label>
           </div>
-        </div>
       ) : (
         <div className={`fixed inset-0 flex items-start justify-center z-50 px-4 pt-16 modal-overlay ${isClosing ? 'modal-closing' : 'modal-opening'}`}>
           <div 
@@ -124,6 +139,13 @@ export default function AddMovies() {
               </button>
             </div>
 
+            {/* Error Message */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded text-red-400 text-sm">
+                {error}
+              </div>
+            )}
+
             {/* Content */}
             <div className="flex flex-col gap-4">
               {!selectedMovie ? (
@@ -139,14 +161,17 @@ export default function AddMovies() {
                       className="w-full pl-10 pr-4 py-2.5 rounded bg-slate-800 text-slate-50 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 border border-slate-700 transition-all"
                       autoFocus
                     />
+                    {isSearching && (
+                      <Loader className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 w-4 h-4 animate-spin" />
+                    )}
                   </div>
 
                   {/* Search Results */}
                   <div className="space-y-1 max-h-72 overflow-y-auto overflow-x-hidden">
-                    {filteredMovies.map((movie) => (
+                    {searchResults.map((movie) => (
                       <div
                         key={movie.id}
-                        onClick={() => setSelectedMovie(movie)}
+                        onClick={() => handleMovieSelect(movie)}
                         className="flex items-center gap-3 p-2 rounded border border-slate-800 hover:border-purple-400/50 hover:bg-slate-800/50 cursor-pointer transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]"
                       >
                         {movie.poster ? (
@@ -162,11 +187,11 @@ export default function AddMovies() {
                         )}
                         <div>
                           <h4 className="font-medium text-slate-50 text-sm">{movie.title}</h4>
-                          <p className="text-xs text-slate-400">{movie.year} · {movie.director}</p>
+                          <p className="text-xs text-slate-400">{movie.year || 'N/A'}</p>
                         </div>
                       </div>
                     ))}
-                    {searchQuery && filteredMovies.length === 0 && (
+                    {searchQuery && !isSearching && searchResults.length === 0 && (
                       <p className="text-slate-400 text-center py-4 text-sm">No results found</p>
                     )}
                     {!searchQuery && (
@@ -191,7 +216,10 @@ export default function AddMovies() {
                     )}
                     <div className="flex-1">
                       <h4 className="text-lg font-bold text-slate-50 mb-1">{selectedMovie.title}</h4>
-                      <p className="text-sm text-slate-400 mb-2">{selectedMovie.year} · {selectedMovie.director}</p>
+                      <p className="text-sm text-slate-400 mb-2">
+                        {selectedMovie.year || 'N/A'}
+                        {selectedMovie.director && ` · ${selectedMovie.director}`}
+                      </p>
                       
                       <button
                         onClick={() => {
@@ -235,10 +263,17 @@ export default function AddMovies() {
                   {/* Add Button */}
                   <button
                     onClick={handleAddMovie}
-                    disabled={rating === 0}
-                    className="w-full bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 disabled:from-slate-700 disabled:to-slate-700 disabled:opacity-50 disabled:cursor-not-allowed py-2.5 rounded font-medium text-sm transition-all duration-150 shadow-lg shadow-purple-500/20 mt-2 hover:scale-[1.02] active:scale-[0.98]"
+                    disabled={rating === 0 || isAdding}
+                    className="w-full bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 disabled:from-slate-700 disabled:to-slate-700 disabled:opacity-50 disabled:cursor-not-allowed py-2.5 rounded font-medium text-sm transition-all duration-150 shadow-lg shadow-purple-500/20 mt-2 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
                   >
-                    Add to My Films
+                    {isAdding ? (
+                      <>
+                        <Loader className="w-4 h-4 animate-spin" />
+                        Adding...
+                      </>
+                    ) : (
+                      'Add to My Films'
+                    )}
                   </button>
                 </>
               )}
@@ -247,25 +282,15 @@ export default function AddMovies() {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         @keyframes modalOverlayIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
-
         @keyframes modalOverlayOut {
-          from {
-            opacity: 1;
-          }
-          to {
-            opacity: 0;
-          }
+          from { opacity: 1; }
+          to { opacity: 0; }
         }
-
         @keyframes modalContentIn {
           from {
             opacity: 0;
@@ -276,7 +301,6 @@ export default function AddMovies() {
             transform: scale(1) translateY(0);
           }
         }
-
         @keyframes modalContentOut {
           from {
             opacity: 1;
@@ -287,19 +311,15 @@ export default function AddMovies() {
             transform: scale(0.95) translateY(-20px);
           }
         }
-
         .modal-opening {
           animation: modalOverlayIn 0.25s ease-out forwards;
         }
-
         .modal-closing {
           animation: modalOverlayOut 0.2s ease-in forwards;
         }
-
         .modal-content-opening {
           animation: modalContentIn 0.25s ease-out forwards;
         }
-
         .modal-content-closing {
           animation: modalContentOut 0.2s ease-in forwards;
         }
