@@ -56,7 +56,13 @@ export default function AddMovies({ onMovieAdded }) {
     setError(null);
 
     try {
-      await movieApi.addMovie(selectedMovie.id, rating);
+      // Add movie with caching (movieApi will cache it automatically)
+      await movieApi.addMovie(
+        selectedMovie.id, 
+        rating, 
+        new Date(),
+        selectedMovie // Pass movie details for caching
+      );
       
       // Notify parent component to refresh data
       if (onMovieAdded) {
@@ -112,7 +118,7 @@ export default function AddMovies({ onMovieAdded }) {
                 const file = e.target.files?.[0];
                 if (file) {
                   alert(`Selected file: ${file.name}`);
-                  // Implement CSV import logic here
+                  // TODO: Implement CSV import logic
                 }
               }} 
             />
@@ -220,6 +226,15 @@ export default function AddMovies({ onMovieAdded }) {
                         {selectedMovie.year || 'N/A'}
                         {selectedMovie.director && ` · ${selectedMovie.director}`}
                       </p>
+                      {selectedMovie.genres && selectedMovie.genres.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {selectedMovie.genres.slice(0, 3).map((genre, idx) => (
+                            <span key={idx} className="text-xs bg-slate-800 px-1.5 py-0.5 rounded text-slate-300">
+                              {genre}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       
                       <button
                         onClick={() => {

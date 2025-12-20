@@ -1,12 +1,32 @@
 // frontend/src/components/Card.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Star } from 'lucide-react';
+import { Star, Clock, Loader } from 'lucide-react';
 import { getMovieUrl, getPersonUrl } from '../utils/urlUtils';
+import { movieApi } from '../api/movieApi';
+import { tmdbService } from '../api/tmdb';
 
-export default function Card({ movie, onClick, showRating = false, index = 0, isPerson = false }) {
+export default function Card({ movie, onClick, showRating = false, index = 0, isPerson = false, onWatchlistChange, hideWatchlist = false }) {
   const [isHovered, setIsHovered] = useState(false);
+  const [inWatchlist, setInWatchlist] = useState(movie.inWatchlist || false);
+  const [isTogglingWatchlist, setIsTogglingWatchlist] = useState(false);
   const navigate = useNavigate();
+
+  // Check watchlist status on mount (for non-watchlist pages)
+  useEffect(() => {
+    if (!isPerson && !movie.inWatchlist) {
+      checkWatchlistStatus();
+    }
+  }, [movie.id, isPerson]);
+
+  const checkWatchlistStatus = async () => {
+    try {
+      const result = await movieApi.checkWatchlist(movie.id);
+      setInWatchlist(result.inWatchlist);
+    } catch (err) {
+      console.error('Failed to check watchlist status:', err);
+    }
+  };
 
   // Handle both movie and person data structures
   const title = movie.title || movie.name;
@@ -55,6 +75,56 @@ export default function Card({ movie, onClick, showRating = false, index = 0, is
     }
   };
 
+  const handleWatchlistToggle = async (e) => {
+    e.stopPropagation();
+    
+    if (isTogglingWatchlist) return;
+
+    setIsTogglingWatchlist(true);
+
+    try {
+      if (inWatchlist) {
+        // Remove from watchlist
+        await movieApi.removeFromWatchlist(movie.id);
+        setInWatchlist(false);
+        
+        // Notify parent if callback provided (for watchlist page to refresh)
+        if (onWatchlistChange) {
+          onWatchlistChange(movie.id, false);
+        }
+      } else {
+        // Add to watchlist - need to get full movie details first if not available
+        let movieDetails = null;
+        if (!movie.genres || !movie.director) {
+          movieDetails = await tmdbService.getMovieDetails(movie.id);
+        } else {
+          movieDetails = {
+            id: movie.id,
+            title: movie.title,
+            year: movie.year,
+            poster: movie.poster,
+            director: movie.director,
+            directorId: movie.directorId,
+            genres: movie.genres,
+          };
+        }
+
+        await movieApi.addToWatchlist(movie.id, movieDetails);
+        setInWatchlist(true);
+        
+        // Notify parent if callback provided
+        if (onWatchlistChange) {
+          onWatchlistChange(movie.id, true);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to toggle watchlist:', err);
+      alert('Failed to update watchlist. Please try again.');
+    } finally {
+      setIsTogglingWatchlist(false);
+    }
+  };
+
   return (
     <div 
       className="group cursor-pointer movie-card"
@@ -72,6 +142,26 @@ export default function Card({ movie, onClick, showRating = false, index = 0, is
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
         
+        {/* Watchlist Toggle Button (only for movies, not people, and not hidden) */}
+        {!isPerson && !hideWatchlist && isHovered && (
+          <button
+            onClick={handleWatchlistToggle}
+            disabled={isTogglingWatchlist}
+            className={`absolute top-2 right-2 p-1.5 rounded-full backdrop-blur-sm transition-all duration-200 z-10 ${
+              inWatchlist 
+                ? 'bg-purple-500/90 text-white hover:bg-purple-600/90' 
+                : 'bg-slate-900/70 text-slate-300 hover:bg-slate-800/90'
+            } ${isTogglingWatchlist ? 'opacity-50 cursor-not-allowed' : 'hover:scale-110 active:scale-95'}`}
+            title={inWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
+          >
+            {isTogglingWatchlist ? (
+              <Loader className="w-4 h-4 animate-spin" />
+            ) : (
+              <Clock className="w-4 h-4" />
+            )}
+          </button>
+        )}
+        
         {isHovered && (
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent animate-fade-in">
             <div className="absolute inset-0 p-3 flex flex-col justify-end">
@@ -88,7 +178,7 @@ export default function Card({ movie, onClick, showRating = false, index = 0, is
                   director
                 ) : (
                   <>
-                    {year} · 
+                    {year} ·
                     {movie.directorId ? (
                       <button
                         onClick={handleDirectorClick}

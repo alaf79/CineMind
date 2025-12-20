@@ -38,6 +38,10 @@ const fetchWithAuth = async (url, options = {}) => {
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Request failed' }));
     console.error('❌ Request failed:', error);
+    // Handle different error types
+    if (response.status === 429) {
+      throw new Error('Rate limit exceeded. Please wait a moment and try again.');
+    }
     throw new Error(error.error || `HTTP error! status: ${response.status}`);
   }
   
@@ -45,9 +49,36 @@ const fetchWithAuth = async (url, options = {}) => {
   return response.json();
 };
 
+// Helper for public requests (no auth)
+const fetchPublic = async (url, options = {}) => {
+  const config = {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  };
+
+  const response = await fetch(url, config);
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Request failed' }));
+    throw new Error(error.error || `HTTP error! status: ${response.status}`);
+  }
+  
+  return response.json();
+};
+
 export const movieApi = {
-  // Add movie to user's library
-  addMovie: async (movieId, rating, watchedDate = new Date()) => {
+  // ===== LIBRARY ENDPOINTS =====
+  
+  // Add movie to user's library (with caching)
+  addMovie: async (movieId, rating, watchedDate = new Date(), movieDetails = null) => {
+    // Cache movie details first if provided
+    if (movieDetails) {
+      await movieApi.cacheMovie(movieDetails);
+    }
+    
     return fetchWithAuth(`${API_BASE_URL}/api/movies/add`, {
       method: 'POST',
       body: JSON.stringify({
@@ -71,9 +102,117 @@ export const movieApi = {
     });
   },
 
-  // Delete movie from library (you'll need to add this endpoint to backend)
+  // Delete movie from library
   deleteMovie: async (movieId) => {
     return fetchWithAuth(`${API_BASE_URL}/api/movies/${movieId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // ===== SHOWCASE ENDPOINTS =====
+  
+  // Get user's showcase
+  getShowcase: async () => {
+    const response = await fetchWithAuth(`${API_BASE_URL}/api/movies/showcase`);
+    
+    // Convert backend positions (1-4) to frontend positions (0-3)
+    if (response.success && response.showcase) {
+      response.showcase = response.showcase.map(item => ({
+        ...item,
+        position: item.position - 1
+      }));
+    }
+    
+    return response;
+  },
+
+  // Set movie at specific position (0-3)
+  setShowcasePosition: async (position, movieId) => {
+    // Convert frontend position (0-3) to backend position (1-4)
+    const backendPosition = position + 1;
+    
+    return fetchWithAuth(`${API_BASE_URL}/api/movies/showcase/${backendPosition}`, {
+      method: 'PUT',
+      body: JSON.stringify({ movie_id: movieId }),
+    });
+  },
+
+  // Remove movie from showcase position
+  removeShowcasePosition: async (position) => {
+    // Convert frontend position (0-3) to backend position (1-4)
+    const backendPosition = position + 1;
+    
+    return fetchWithAuth(`${API_BASE_URL}/api/movies/showcase/${backendPosition}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // ===== WATCHLIST ENDPOINTS =====
+  
+  // Get user's watchlist
+  getWatchlist: async () => {
+    return fetchWithAuth(`${API_BASE_URL}/api/movies/watchlist`);
+  },
+
+  // Add movie to watchlist (with caching)
+  addToWatchlist: async (movieId, movieDetails = null) => {
+    // Cache movie details first if provided
+    if (movieDetails) {
+      await movieApi.cacheMovie(movieDetails);
+    }
+    
+    return fetchWithAuth(`${API_BASE_URL}/api/movies/watchlist/add`, {
+      method: 'POST',
+      body: JSON.stringify({ movie_id: movieId }),
+    });
+  },
+
+  // Remove movie from watchlist
+  removeFromWatchlist: async (movieId) => {
+    return fetchWithAuth(`${API_BASE_URL}/api/movies/watchlist/${movieId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Check if movie is in watchlist
+  checkWatchlist: async (movieId) => {
+    return fetchWithAuth(`${API_BASE_URL}/api/movies/watchlist/check/${movieId}`);
+  },
+
+  // ===== CACHE ENDPOINTS (PUBLIC) =====
+  
+  // Get cached movie
+  getCachedMovie: async (movieId) => {
+    return fetchPublic(`${API_BASE_URL}/api/movies/cache/${movieId}`);
+  },
+
+  // Cache movie data
+  cacheMovie: async (movieDetails) => {
+    return fetchPublic(`${API_BASE_URL}/api/movies/cache`, {
+      method: 'POST',
+      body: JSON.stringify({
+        movie_id: movieDetails.id,
+        title: movieDetails.title,
+        year: movieDetails.year,
+        director: movieDetails.director,
+        director_id: movieDetails.directorId,
+        genres: movieDetails.genres || [],
+        poster_path: movieDetails.poster,
+      }),
+    });
+  },
+
+  // Get multiple cached movies in bulk
+  getCachedMoviesBulk: async (movieIds) => {
+    return fetchPublic(`${API_BASE_URL}/api/movies/cache/bulk`, {
+      method: 'POST',
+      body: JSON.stringify({ movie_ids: movieIds }),
+    });
+  },
+
+  // Clean old cache entries (admin/maintenance)
+  cleanupCache: async () => {
+    return fetchPublic(`${API_BASE_URL}/api/movies/cache/cleanup`, {
       method: 'DELETE',
     });
   },

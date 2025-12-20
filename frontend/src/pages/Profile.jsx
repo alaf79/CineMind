@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Plus, X, Search } from "lucide-react";
+import { Plus, X, Search, Loader } from "lucide-react";
 import { authUtils } from "../utils/authUtils";
+import { movieApi } from "../api/movieApi";
+import { tmdbService } from "../api/tmdb";
 import Card from "../components/Card";
 
 export default function Profile() {
@@ -8,21 +10,9 @@ export default function Profile() {
   const [currentShowcaseIndex, setCurrentShowcaseIndex] = useState(null);
   const [isModalClosing, setIsModalClosing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showcase, setShowcase] = useState(() => {
-    // Initialize from localStorage immediately
-    try {
-      const stored = localStorage.getItem('profileShowcase');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length === 4) {
-          return parsed;
-        }
-      }
-    } catch (e) {
-      console.error('Failed to load showcase:', e);
-    }
-    return [null, null, null, null];
-  });
+  const [showcase, setShowcase] = useState([null, null, null, null]);
+  const [userLibrary, setUserLibrary] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState(authUtils.getUsername() || "Guest");
 
   // Load username on mount
@@ -31,14 +21,101 @@ export default function Profile() {
     if (storedUsername) setUsername(storedUsername);
   }, []);
 
-  // Save showcase to localStorage whenever it changes
+  // Load showcase and library on mount
   useEffect(() => {
+    loadShowcaseAndLibrary();
+  }, []);
+
+  const loadShowcaseAndLibrary = async () => {
     try {
-      localStorage.setItem('profileShowcase', JSON.stringify(showcase));
-    } catch (e) {
-      console.error('Failed to save showcase:', e);
+      setLoading(true);
+
+      // Load both library and showcase in parallel
+      const [libraryData, showcaseData] = await Promise.all([
+        movieApi.getLibrary(),
+        movieApi.getShowcase()
+      ]);
+
+      const userMovies = libraryData.movies || [];
+      const showcaseItems = showcaseData.showcase || [];
+
+      if (userMovies.length === 0) {
+        setUserLibrary([]);
+        setShowcase([null, null, null, null]);
+        return;
+      }
+
+      // Get movie IDs for bulk cache lookup
+      const movieIds = userMovies.map(m => m.movie_id);
+
+      // Try to get cached data first (single bulk request)
+      const cacheResult = await movieApi.getCachedMoviesBulk(movieIds);
+      const cachedMovies = cacheResult.movies || [];
+
+      // For movies not in cache, fetch from TMDB
+      const uncachedIds = movieIds.filter(
+        id => !cachedMovies.find(cm => cm.movie_id === id)
+      );
+
+      let tmdbDetails = [];
+      if (uncachedIds.length > 0) {
+        // Fetch all uncached movies from TMDB
+        tmdbDetails = await tmdbService.getMoviesDetails(uncachedIds);
+        
+        // Batch cache all newly fetched movies (don't await individual calls)
+        const cachePromises = tmdbDetails.map(movie => 
+          movieApi.cacheMovie(movie).catch(err => {
+            console.warn(`Failed to cache movie ${movie.id}:`, err);
+          })
+        );
+        
+        // Fire and forget - don't block on caching
+        Promise.all(cachePromises).catch(err => {
+          console.warn('Some movies failed to cache:', err);
+        });
+      }
+
+      // Combine cached and TMDB data
+      const enrichedMovies = userMovies.map(userMovie => {
+        const cached = cachedMovies.find(cm => cm.movie_id === userMovie.movie_id);
+        const tmdb = tmdbDetails.find(m => m.id === userMovie.movie_id);
+        
+        return {
+          id: userMovie.movie_id,
+          title: cached ? cached.title : (tmdb?.title || 'Unknown'),
+          rating: userMovie.rating,
+          year: cached ? cached.year : tmdb?.year,
+          poster: cached ? cached.poster_path : tmdb?.poster,
+          director: cached ? cached.director : tmdb?.director,
+          directorId: cached ? cached.director_id : tmdb?.directorId,
+          genres: cached ? (typeof cached.genres === 'string' ? JSON.parse(cached.genres) : cached.genres) : (tmdb?.genres || []),
+          watchedDate: userMovie.watched_date,
+          updatedAt: userMovie.updated_at,
+        };
+      });
+
+      setUserLibrary(enrichedMovies);
+
+      // Initialize showcase array
+      const newShowcase = [null, null, null, null];
+      
+      // Fill showcase with movies from backend (positions already converted to 0-3 by API)
+      for (const item of showcaseItems) {
+        if (item.position >= 0 && item.position <= 3) {
+          const movie = enrichedMovies.find(m => m.id === item.movie_id);
+          if (movie) {
+            newShowcase[item.position] = movie;
+          }
+        }
+      }
+
+      setShowcase(newShowcase);
+    } catch (err) {
+      console.error('Failed to load showcase and library:', err);
+    } finally {
+      setLoading(false);
     }
-  }, [showcase]);
+  };
 
   const user = {
     name: username,
@@ -49,28 +126,22 @@ export default function Profile() {
   };
 
   const stats = {
-    filmsWatched: 247,
-    thisYear: 68,
-    avgRating: 7.8,
-    favoriteDirector: "Christopher Nolan",
+    filmsWatched: userLibrary.length,
+    thisYear: userLibrary.filter(m => {
+      const watchedYear = m.watchedDate ? new Date(m.watchedDate).getFullYear() : null;
+      return watchedYear === new Date().getFullYear();
+    }).length,
+    avgRating: userLibrary.length > 0 
+      ? (userLibrary.reduce((sum, m) => sum + m.rating, 0) / userLibrary.length).toFixed(1)
+      : 0,
+    favoriteDirector: "Christopher Nolan", // TODO: Calculate from library
   };
-
-  const allMovies = [
-    { id: 1, title: "Inception", year: 2010, poster: "https://image.tmdb.org/t/p/w500/ljsZTbVsrQSqZgWeep2B1QiDKuh.jpg", director: "Christopher Nolan", rating: 9 },
-    { id: 2, title: "Interstellar", year: 2014, poster: "https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg", director: "Christopher Nolan", rating: 10 },
-    { id: 3, title: "The Dark Knight", year: 2008, poster: "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg", director: "Christopher Nolan", rating: 9 },
-    { id: 4, title: "The Matrix", year: 1999, poster: "https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg", director: "Wachowski Sisters", rating: 10 },
-    { id: 5, title: "Pulp Fiction", year: 1994, poster: "https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg", director: "Quentin Tarantino", rating: 9 },
-    { id: 6, title: "The Shawshank Redemption", year: 1994, poster: "https://image.tmdb.org/t/p/w500/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg", director: "Frank Darabont", rating: 9.3 },
-    { id: 7, title: "Forrest Gump", year: 1994, poster: "https://image.tmdb.org/t/p/w500/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg", director: "Robert Zemeckis", rating: 8.8 },
-    { id: 8, title: "Fight Club", year: 1999, poster: "https://image.tmdb.org/t/p/w500/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg", director: "David Fincher", rating: 8.8 },
-  ];
 
   // Get movies already in showcase
   const showcaseMovieIds = showcase.filter(m => m !== null).map(m => m.id);
 
   // Filter out movies already in showcase
-  const availableMovies = allMovies.filter(movie => !showcaseMovieIds.includes(movie.id));
+  const availableMovies = userLibrary.filter(movie => !showcaseMovieIds.includes(movie.id));
 
   const searchResults = searchQuery.length
     ? availableMovies.filter(movie => 
@@ -94,18 +165,52 @@ export default function Profile() {
     }, 200);
   };
 
-  const handleAddToShowcase = (movie) => {
-    const newShowcase = [...showcase];
-    newShowcase[currentShowcaseIndex] = movie;
-    setShowcase(newShowcase);
-    handleCloseModal();
+  const handleAddToShowcase = async (movie) => {
+    try {
+      // Verify movie is in user's library
+      if (!userLibrary.find(m => m.id === movie.id)) {
+        alert('This movie is not in your library. Please rate it first.');
+        return;
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await movieApi.setShowcasePosition(currentShowcaseIndex, movie.id);
+      
+      // Update local state
+      const newShowcase = [...showcase];
+      newShowcase[currentShowcaseIndex] = movie;
+      setShowcase(newShowcase);
+      
+      handleCloseModal();
+    } catch (err) {
+      console.error('Failed to add to showcase:', err);
+      const errorMsg = err.message || 'Failed to update showcase. Please try again.';
+      alert(errorMsg);
+    }
   };
 
-  const handleRemoveFromShowcase = (index) => {
-    const newShowcase = [...showcase];
-    newShowcase[index] = null;
-    setShowcase(newShowcase);
+  const handleRemoveFromShowcase = async (index) => {
+    try {
+      await movieApi.removeShowcasePosition(index);
+      
+      // Update local state
+      const newShowcase = [...showcase];
+      newShowcase[index] = null;
+      setShowcase(newShowcase);
+    } catch (err) {
+      console.error('Failed to remove from showcase:', err);
+      alert('Failed to update showcase. Please try again.');
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col w-full bg-slate-950 text-slate-50 min-h-screen items-center justify-center">
+        <Loader className="w-12 h-12 animate-spin text-purple-400 mb-4" />
+        <p className="text-slate-400">Loading your profile...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col w-full bg-slate-950 text-slate-50 min-h-screen">
@@ -146,30 +251,37 @@ export default function Profile() {
 
         {/* Right Column: Showcase */}
         <div className="w-full flex justify-center mt-4 md:mt-0">
-          <div className="grid grid-cols-2 gap-6 sm:gap-6 md:gap-8 max-w-[500px] justify-items-center">
-            {showcase.map((movie, idx) => (
-              <div key={idx} className="relative group w-[160px] sm:w-[180px] md:w-[200px] aspect-[2/3] flex-shrink-0">
-                {movie ? (
-                  <>
-                    <Card movie={movie} showRating={true} index={idx} />
+          {userLibrary.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-slate-400 text-lg mb-2">No films rated yet</p>
+              <p className="text-slate-500 text-sm">Rate some films to create your showcase</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-6 sm:gap-6 md:gap-8 max-w-[500px] justify-items-center">
+              {showcase.map((movie, idx) => (
+                <div key={idx} className="relative group w-[160px] sm:w-[180px] md:w-[200px] aspect-[2/3] flex-shrink-0">
+                  {movie ? (
+                    <>
+                      <Card movie={movie} showRating={true} index={idx} hideWatchlist={true} />
+                      <button
+                        onClick={() => handleRemoveFromShowcase(idx)}
+                        className="absolute top-2 right-2 bg-slate-900/90 backdrop-blur-sm rounded-full p-1 opacity-0 group-hover:opacity-100 transition hover:scale-110 active:scale-90 z-10"
+                      >
+                        <X className="w-5 h-5 text-slate-300" />
+                      </button>
+                    </>
+                  ) : (
                     <button
-                      onClick={() => handleRemoveFromShowcase(idx)}
-                      className="absolute top-2 right-2 bg-slate-900/90 backdrop-blur-sm rounded-full p-1 opacity-0 group-hover:opacity-100 transition hover:scale-110 active:scale-90 z-10"
+                      onClick={() => handleOpenModal(idx)}
+                      className="w-full h-full rounded border-2 border-dashed border-purple-500/30 hover:border-purple-500/60 bg-slate-900/30 hover:bg-slate-900/50 flex items-center justify-center text-purple-400/70 text-4xl sm:text-5xl transition-all hover:scale-105 active:scale-95"
                     >
-                      <X className="w-5 h-5 text-slate-300" />
+                      <Plus className="w-12 h-12 sm:w-16 sm:h-16" />
                     </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => handleOpenModal(idx)}
-                    className="w-full h-full rounded border-2 border-dashed border-purple-500/30 hover:border-purple-500/60 bg-slate-900/30 hover:bg-slate-900/50 flex items-center justify-center text-purple-400/70 text-4xl sm:text-5xl transition-all hover:scale-105 active:scale-95"
-                  >
-                    <Plus className="w-12 h-12 sm:w-16 sm:h-16" />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -197,7 +309,7 @@ export default function Profile() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 w-4 h-4" />
               <input
                 type="text"
-                placeholder="Search for a movie..."
+                placeholder="Search your rated films..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 rounded bg-slate-800 text-slate-50 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 border border-slate-700 transition-all"
@@ -227,16 +339,19 @@ export default function Profile() {
                   <div className="flex-1 min-w-0">
                     <h4 className="font-medium text-slate-50 text-sm truncate">{movie.title}</h4>
                     <p className="text-xs text-slate-400">{movie.year} · {movie.director}</p>
+                    {movie.genres && movie.genres.length > 0 && (
+                      <p className="text-xs text-slate-500">{movie.genres.slice(0, 2).join(', ')}</p>
+                    )}
                   </div>
                 </div>
               ))}
               {searchQuery && searchResults.length === 0 && (
                 <p className="text-slate-400 text-center py-4 text-sm">
-                  {availableMovies.length === 0 ? "All movies are already in your showcase" : "No results found"}
+                  {availableMovies.length === 0 ? "All your rated films are already in your showcase" : "No results found"}
                 </p>
               )}
               {!searchQuery && (
-                <p className="text-slate-400 text-center py-4 text-sm">Start typing to search for movies</p>
+                <p className="text-slate-400 text-center py-4 text-sm">Start typing to search your rated films</p>
               )}
             </div>
           </div>

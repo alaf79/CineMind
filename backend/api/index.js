@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import authRoutes from "../routes/authRoutes.js";
 import movieRoutes from "../routes/movieRoutes.js";
+import { apiLimiter } from "../middleware/rateLimiter.js";
 
 dotenv.config();
 
@@ -22,6 +23,14 @@ app.use(express.urlencoded({ extended: true }));
 app.get("/", (req, res) => res.json({ status: "working", message: "API is running" }));
 app.get("/api", (req, res) => res.json({ status: "working", message: "API routes ready" }));
 
+// --- Rate limiting (skip cache endpoints) ---
+app.use("/api/", (req, res, next) => {
+  if (req.path.startsWith('/movies/cache')) {
+    return next();
+  }
+  return apiLimiter(req, res, next);
+});
+
 // --- Mount routers ---
 app.use("/api/auth", authRoutes);
 app.use("/api/movies", movieRoutes);
@@ -40,7 +49,17 @@ app.use((req, res) => {
       "POST /api/movies/add",
       "GET /api/movies/library",
       "PUT /api/movies/:movieId/rating",
-      "DELETE /api/movies/:movieId"
+      "DELETE /api/movies/:movieId",
+      "GET /api/movies/showcase",
+      "PUT /api/movies/showcase/:position",
+      "DELETE /api/movies/showcase/:position",
+      "GET /api/movies/watchlist",
+      "POST /api/movies/watchlist/add",
+      "DELETE /api/movies/watchlist/:movieId",
+      "GET /api/movies/watchlist/check/:movieId",
+      "GET /api/movies/cache/:movieId",
+      "POST /api/movies/cache",
+      "POST /api/movies/cache/bulk"
     ]
   });
 });
