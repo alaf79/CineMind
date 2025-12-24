@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Loader } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import Card from '../components/Card';
 import { movieApi } from '../api/movieApi';
 import { tmdbService } from '../api/tmdb';
+import FilmReelLoading from '../components/FilmReelLoading';
 
 export default function Watchlist() {
   const [movies, setMovies] = useState([]);
@@ -89,9 +90,19 @@ export default function Watchlist() {
 
   if (loading) {
     return (
-      <div className="flex flex-col w-full bg-slate-950 text-slate-50 min-h-screen items-center justify-center">
-        <Loader className="w-12 h-12 animate-spin text-purple-400 mb-4" />
-        <p className="text-slate-400">Loading your watchlist...</p>
+      <div className="flex flex-col w-full bg-slate-950 text-slate-50 min-h-screen px-6 py-12 relative">
+        <FilmReelLoading isVisible={true} message="Loading your watchlist..." blocking={false} />
+        
+        {/* Skeleton content so the page structure is visible */}
+        <div className="max-w-7xl mx-auto w-full">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-3xl font-bold">My Watchlist</h2>
+            <button disabled className="p-2 hover:bg-slate-800 rounded transition opacity-50">
+              <RefreshCw className="w-5 h-5" />
+            </button>
+          </div>
+          <p className="text-slate-400 mb-8">Loading...</p>
+        </div>
       </div>
     );
   }

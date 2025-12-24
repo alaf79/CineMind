@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Plus, X, Search, Loader } from "lucide-react";
+import { Plus, X, Search } from "lucide-react";
 import { authUtils } from "../utils/authUtils";
 import { movieApi } from "../api/movieApi";
 import { tmdbService } from "../api/tmdb";
 import Card from "../components/Card";
+import FilmReelLoading from "../components/FilmReelLoading";
 
 export default function Profile() {
   const [isPickingShowcase, setIsPickingShowcase] = useState(false);
@@ -205,9 +206,18 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="flex flex-col w-full bg-slate-950 text-slate-50 min-h-screen items-center justify-center">
-        <Loader className="w-12 h-12 animate-spin text-purple-400 mb-4" />
-        <p className="text-slate-400">Loading your profile...</p>
+      <div className="flex flex-col w-full bg-slate-950 text-slate-50 min-h-screen relative">
+        <FilmReelLoading isVisible={true} message="Loading your profile..." blocking={false} />
+        
+        {/* Skeleton content */}
+        <div className="w-full h-32 sm:h-40 md:h-48 overflow-hidden relative bg-slate-900"></div>
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="flex flex-col md:flex-row gap-6">
+            <div className="flex-shrink-0 w-full md:w-1/3">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-lg bg-slate-800 animate-pulse"></div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
